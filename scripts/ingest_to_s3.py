@@ -1,115 +1,86 @@
 import os
-import sys
-from typing import Dict, Any
 import boto3
 import pandas as pd
-from botocore.exceptions import BotoCoreError, ClientError
+import io
 from dotenv import load_dotenv
+from pandas.errors import EmptyDataError
 
+# Load environment variables from .env file
+load_dotenv()
 
-def load_environment_variables() -> Dict[str, Any]:
-    """Load and validate required environment variables."""
-    load_dotenv()
+# Configuration dictionary
+config = {
+    "access_key_id": os.getenv("Access_key_ID"),
+    "secret_access_key": os.getenv("Secret_access_key"),
+    "bucket_name": os.getenv("BUCKET_NAME"),
+    "local_path": os.getenv("local_path"),
+    "region_name": os.getenv("REGION_NAME"),
+}
 
-    config = {
-        "access_key_id": os.getenv("Access_key_ID"),
-        "secret_access_key": os.getenv("Secret_access_key"),
-        "bucket_name": os.getenv("BUCKET_NAME"),
-        "local_path": os.getenv("local_path"),
-        "region_name": os.getenv("REGION_NAME"),
-    }
+# Initialize Boto3 S3 client
+s3 = boto3.client(
+    "s3",
+    aws_access_key_id=config["access_key_id"],
+    aws_secret_access_key=config["secret_access_key"],
+    region_name=config["region_name"],
+)
 
-    missing_keys = [key for key, value in config.items() if not value]
-    if missing_keys:
-        raise EnvironmentError(
-            f"Missing environment variables: {', '.join(missing_keys)}"
-        )
+bucket_name = config["bucket_name"]
+s3_base_prefix = "raw-data/"
+local_folder = config["local_path"]
 
-    return config
+# Process each file in the local folder
+for filename in os.listdir(local_folder):
+    file_path = os.path.join(local_folder, filename)
 
+    # Handle Excel files
+    if filename.endswith(".xlsx"):
+        try:
+            workbook_name = os.path.splitext(filename)[0]
+            print(f"Processing workbook: {filename}")
+            xls = pd.ExcelFile(file_path)
 
-def initialize_s3_client(access_key: str, secret_key: str, region: str) -> boto3.client:
-    """Initialize and return an S3 client."""
-    try:
-        return boto3.client(
-            "s3",
-            aws_access_key_id=access_key,
-            aws_secret_access_key=secret_key,
-            region_name=region,
-        )
-    except (BotoCoreError, ClientError) as e:
-        raise RuntimeError(f"Failed to initialize S3 client: {str(e)}") from e
+            for sheet in xls.sheet_names:
+                print(f"  - Sheet: {sheet}")
+                try:
+                    df = pd.read_excel(xls, sheet_name=sheet).dropna(how="all")
 
+                    # Clean sheet name for S3 key
+                    clean_sheet_name = sheet.lower().replace(" ", "_")
+                    s3_key = f"{s3_base_prefix}{workbook_name}/{clean_sheet_name}.csv"
 
-def convert_xlsx_to_csv(local_path: str) -> None:
-    """Convert all .xlsx files in the directory to .csv."""
-    files = os.listdir(local_path)
-    for file in files:
-        if file.endswith(".xlsx"):
-            file_path = os.path.join(local_path, file)
-            try:
-                df = pd.read_excel(file_path)
-                csv_file = file.replace(".xlsx", ".csv")
-                csv_path = os.path.join(local_path, csv_file)
-                df.to_csv(csv_path, index=False)
-                print(f" Converted: {file} → {csv_file}")
-            except Exception as e:  # pylint: disable=broad-exception-caught
-                print(f" Failed to convert {file}: {str(e)}", file=sys.stderr)
+                    # Save to S3
+                    csv_buffer = io.StringIO()
+                    df.to_csv(csv_buffer, index=False)
+                    s3.put_object(
+                        Bucket=bucket_name, Key=s3_key, Body=csv_buffer.getvalue()
+                    )
+                    print(f"Uploaded to s3://{bucket_name}/{s3_key}")
 
+                except (ValueError, pd.errors.ParserError) as sheet_err:
+                    print(f"Error reading sheet '{sheet}' in '{filename}': {sheet_err}")
 
-def upload_files_to_s3(
-    s3_client: boto3.client, bucket_name: str, local_path: str, s3_prefix: str
-) -> None:
-    """Upload all .csv files from local_path to s3_prefix in the bucket."""
-    if not os.path.exists(local_path):
-        raise FileNotFoundError(f"Local path does not exist: {local_path}")
+        except (FileNotFoundError, OSError, PermissionError) as file_err:
+            print(f"Failed to process Excel file '{filename}': {file_err}")
 
-    # Convert .xlsx files to .csv
-    convert_xlsx_to_csv(local_path)
+    # Handle CSV files
+    elif filename.endswith(".csv"):
+        try:
+            base_name = os.path.splitext(filename)[0]
+            print(f"Processing single CSV: {filename}")
+            df = pd.read_csv(file_path).dropna(how="all")
 
-    # Upload only .csv files
-    files = [f for f in os.listdir(local_path) if f.endswith(".csv")]
-    if not files:
-        print(f" No .csv files found in {local_path}")
-        return
+            s3_key = f"{s3_base_prefix}{base_name}/{base_name}.csv"
 
-    for file in files:
-        file_path = os.path.join(local_path, file)
-        if os.path.isfile(file_path):
-            s3_key = f"{s3_prefix}/{file}"
+            csv_buffer = io.StringIO()
+            df.to_csv(csv_buffer, index=False)
+            s3.put_object(Bucket=bucket_name, Key=s3_key, Body=csv_buffer.getvalue())
+            print(f"Uploaded to s3://{bucket_name}/{s3_key}")
 
-            try:
-                s3_client.upload_file(file_path, bucket_name, s3_key)
-                print(f" Uploaded: {file_path} → s3://{bucket_name}/{s3_key}")
-            except (BotoCoreError, ClientError, IOError) as e:
-                print(f" Error uploading {file_path}: {str(e)}", file=sys.stderr)
-
-
-def main() -> None:
-    """Main function to orchestrate the S3 upload process."""
-    try:
-        # Load configuration
-        config = load_environment_variables()
-
-        # Initialize S3 client
-        s3_client = initialize_s3_client(
-            config["access_key_id"], config["secret_access_key"], config["region_name"]
-        )
-
-        # Upload all .csv files in local_path to the S3 folder raw_data/
-        upload_files_to_s3(
-            s3_client, config["bucket_name"], config["local_path"], "raw_data"
-        )
-
-        print("All upload operations completed.")
-
-    except (EnvironmentError, RuntimeError, FileNotFoundError) as e:
-        print(f" Fatal error: {str(e)}", file=sys.stderr)
-        sys.exit(1)
-    except Exception as e:  # pylint: disable=broad-exception-caught
-        print(f" Unexpected error: {str(e)}", file=sys.stderr)
-        sys.exit(1)
-
-
-if __name__ == "__main__":
-    main()
+        except (
+            FileNotFoundError,
+            PermissionError,
+            EmptyDataError,
+            pd.errors.ParserError,
+        ) as csv_err:
+            print(f"Failed to process CSV file '{filename}': {csv_err}")
