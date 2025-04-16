@@ -3,4 +3,3 @@ pylint
 black
 pytest
 chispa
-pyspark[sql]
