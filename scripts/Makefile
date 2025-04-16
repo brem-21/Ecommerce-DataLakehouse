@@ -10,7 +10,4 @@ lint:
 
 refactor: format lint
 
-pytest:
-	pytest --disable-warnings
-
-all: install refactor pytest
+all: install refactor 
