@@ -15,12 +15,12 @@ COPY requirements.txt Makefile ./
 # Install Python dependencies using Makefile
 RUN make install
 
-# Copy the rest of the application code (including the Data folder and ingest_to_s3.py)
+# Copying the rest of the application code (including the Data folder and ingest_to_s3.py)
 COPY Data/ /app/Data/
 COPY ingest_to_s3.py /app/ingest_to_s3.py
 
-# Optional: Run code formatting and linting during build
+#Run code formatting and linting during build
 RUN make refactor
 
-# Set default command to run your script
+# Set default command to run the script
 CMD ["python", "ingest_to_s3.py"]
