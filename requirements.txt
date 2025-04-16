@@ -3,3 +3,4 @@ pylint
 black
 pytest
 chispa
+notebook
