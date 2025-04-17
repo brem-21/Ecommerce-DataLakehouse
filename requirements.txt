@@ -4,3 +4,4 @@ black
 pytest
 chispa
 notebook
+pytest-cov

@@ -10,4 +10,7 @@ lint:
 
 refactor: format lint
 
-all: install refactor 
+test:
+	python -m pytest -vv --cov=tests test_*.py
+
+all: install refactor test
