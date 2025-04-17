@@ -11,7 +11,6 @@ test:
 refactor: format lint
 
 push-to-main:
-	push-to-main:
 	@git config user.name "brem-21" 
 	@git config user.email "brempong.dankwah@amalitech.com"
 	@git fetch origin
