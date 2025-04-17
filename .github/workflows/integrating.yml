@@ -6,32 +6,11 @@ on:
 
 jobs:
   build:
+
     runs-on: ubuntu-latest
 
     steps:
     - uses: actions/checkout@v4
 
-    - name: Install dependencies
-      run: |
-        pip install --upgrade pip
-        pip install -r requirements.txt
-
-    - name: Format code
-      run: |
-        black scripts/*.py tests/*.py
-
-    - name: Run tests
-      run: |
-        python -m pytest -vv --cov=tests tests/test_*.py
-
     - name: Push to main
-      run: |
-        git config user.name "brem-21"
-        git config user.email "brempong.dankwah@amalitech.com"
-        git add -A
-        git commit -m "Auto commit before pushing to main" || echo "No changes to commit"
-        git fetch origin
-        git checkout main
-        git merge dev --no-edit --allow-unrelated-histories
-        git push origin main
-        git checkout dev
+      run: make all
