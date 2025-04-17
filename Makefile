@@ -6,7 +6,7 @@ format:
 	black scripts/*.py tests/*.py 
 
 test:
-	python -m pytest -vv --cov=tests test_*.py
+	python -m pytest -vv --cov=tests tests/test_*.py
 
 refactor: format lint
 
