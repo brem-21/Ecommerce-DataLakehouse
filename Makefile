@@ -3,14 +3,11 @@ install:
 	pip install -r requirements.txt
 
 format:
-	black *.py 
+	black scripts/*.py tests/*.py 
 
-lint:
-	pylint --disable=R,C *.py
+test:
+	python -m pytest -vv --cov=tests tests/test_*.py
 
 refactor: format lint
 
-pytest:
-	pytest --disable-warnings
-
-all: install refactor pytest
+all: install format test 

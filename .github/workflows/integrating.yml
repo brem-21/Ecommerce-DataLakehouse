@@ -1,0 +1,16 @@
+name: Integrating dev changes to main
+
+on:
+  push:
+    branches: [ "dev" ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Push to main
+      run: make all

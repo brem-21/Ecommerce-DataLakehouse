@@ -1,0 +1,7 @@
+python-dotenv
+boto3
+pyarrow
+pylint
+black
+pandas
+openpyxl
