@@ -16,7 +16,7 @@ push-to-main:
 	@git add -A && git commit -m "Auto commit before pushing to main" || echo "No changes to commit"
 	@git fetch origin
 	@git checkout main
-	@git merge dev --no-edit
+	@git merge dev --no-edit --allow-unrelated-histories
 	@git push origin main
 	@git checkout dev
 
