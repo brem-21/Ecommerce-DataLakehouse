@@ -13,6 +13,7 @@ refactor: format lint
 push-to-main:
 	@git config user.name "brem-21" 
 	@git config user.email "brempong.dankwah@amalitech.com"
+	@git add -A && git commit -m "Auto commit before pushing to main" || echo "No changes to commit"
 	@git fetch origin
 	@git checkout main
 	@git merge dev --no-edit
