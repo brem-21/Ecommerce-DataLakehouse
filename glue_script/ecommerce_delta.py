@@ -245,7 +245,7 @@ def save_master_data_to_s3(df, bucket_name, output_path, archive_path):
         logger.error(f"Failed to save master data to S3: {str(e)}")
         raise
 
-
+# The main function is the entry point for the Glue job
 def main():
     """Main ETL job execution"""
     try:
