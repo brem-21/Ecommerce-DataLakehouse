@@ -1,0 +1,106 @@
+name: Deploy Glue Job and Trigger Step Function
+
+on:
+  push:
+    branches:
+      - "main"
+    paths:
+      - 'glue_script/**'  # Specify paths for Glue scripts
+  pull_request:
+    branches:
+      - "main"
+    paths:
+      - 'glue_script/**'
+
+jobs:
+  test:
+    name: Run PySpark Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v3
+        with:
+          python-version: '3.9' # Compatible with Glue/PySpark
+
+      - name: Set up Java (required for Spark)
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '11' # Spark 3.x common version
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          java -version  # Verify Java setup
+          python --version  # Verify Python setup
+          pip list  # List installed packages
+
+      - name: Run Pytest Integration Tests
+        run: cd glue_script && pytest  # Run tests for Glue ETL
+        env:
+           PYSPARK_PYTHON: python  # Ensure pytest uses the correct Python
+           PYSPARK_DRIVER_PYTHON: python
+
+  deploy:
+    name: Deploy Glue Script to AWS
+    needs: test  # Run only if tests pass
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write  # Required for OIDC authentication
+      contents: read  # Required to read contents $$
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.REGION_NAME }}
+          
+      - name: Deploy Glue Job
+        run: |
+          # Upload the Glue job script to S3
+          aws s3 cp glue_script/ s3://aws-glue-assets-${{ secrets.AWS_ACCOUNT_ID }}-${{ secrets.REGION_NAME }}/scripts/ --recursive
+          
+          # Update the Glue job definition
+          aws glue update-job --job-name ecommerce-delta \
+            --job-update '{
+              "Role": "arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/service-role/${{ secrets.STEP_FUNCTIONS_ROLE }}",
+              "Command": {
+                "Name": "ecommerce-delta",
+                "ScriptLocation": "s3://aws-glue-assets-${{ secrets.AWS_ACCOUNT_ID }}-${{ secrets.REGION_NAME }}/scripts/ecommerce-delta.py",
+                "PythonVersion": "3"
+              },
+              "DefaultArguments": {
+                "--job-language": "python",
+                "--enable-continuous-cloudwatch-log": "true",
+                "--enable-metrics": ""
+              },
+              "GlueVersion": "3.0",
+              "WorkerType": "G.1X",
+              "NumberOfWorkers": 2,
+              "ExecutionProperty": {
+                "MaxConcurrentRuns": 1
+              }
+            }'
+          
+      - name: Trigger Step Function Execution
+        run: |
+          # Trigger Step Function execution
+          aws stepfunctions start-execution \
+            --state-machine-arn "arn:aws:states:${{ secrets.REGION_NAME }}:${{ secrets.AWS_ACCOUNT_ID }}:stateMachine:lakehouse" \
+            --name "github-actions-$(date +%s)" \
+            --input '{"Comment": "Triggered by GitHub Actions deployment"}'
+            
+      - name: Verify Execution
+        run: |
+          # Optional: Add verification logic here to ensure the deployment worked
+          echo "Glue job deployed and pipeline triggered successfully"
