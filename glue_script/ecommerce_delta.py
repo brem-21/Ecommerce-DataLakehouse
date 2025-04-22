@@ -199,7 +199,7 @@ def partition_data(df, partition_by, num_partitions=None, sort_by=None):
         logger.error(f"Failed to partition data: {str(e)}")
         raise
 
-
+# normalize_data function is used to create normalized tables
 def save_normalized_data_to_s3(
     df, bucket_name, output_path, archive_path, partition_col=None
 ):
