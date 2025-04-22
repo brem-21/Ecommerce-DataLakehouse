@@ -199,7 +199,7 @@ def partition_data(df, partition_by, num_partitions=None, sort_by=None):
         logger.error(f"Failed to partition data: {str(e)}")
         raise
 
-
+# normalize_data function is used to create normalized tables
 def save_normalized_data_to_s3(
     df, bucket_name, output_path, archive_path, partition_col=None
 ):
@@ -245,7 +245,7 @@ def save_master_data_to_s3(df, bucket_name, output_path, archive_path):
         logger.error(f"Failed to save master data to S3: {str(e)}")
         raise
 
-
+# The main function is the entry point for the Glue job
 def main():
     """Main ETL job execution"""
     try:
