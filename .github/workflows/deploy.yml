@@ -52,7 +52,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       id-token: write  # Required for OIDC authentication
-      contents: read  # Required to read contents
+      contents: read  # Required to read contents $$
 
     steps:
       - name: Checkout code
