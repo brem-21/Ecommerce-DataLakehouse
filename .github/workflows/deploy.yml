@@ -3,12 +3,12 @@ name: Deploy Glue Job and Trigger Step Function
 on:
   push:
     branches:
-      - main
+      - "main"
     paths:
       - 'glue_script/**'  # Specify paths for Glue scripts
   pull_request:
     branches:
-      - main
+      - "main"
     paths:
       - 'glue_script/**'
 
@@ -52,7 +52,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       id-token: write  # Required for OIDC authentication
-      contents: read  # Required to read contents
+      contents: read  # Required to read contents $$
 
     steps:
       - name: Checkout code
