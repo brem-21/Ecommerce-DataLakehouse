@@ -3,12 +3,12 @@ name: Deploy Glue Job and Trigger Step Function
 on:
   push:
     branches:
-      - main
+      - "main"
     paths:
       - 'glue_script/**'  # Specify paths for Glue scripts
   pull_request:
     branches:
-      - main
+      - "main"
     paths:
       - 'glue_script/**'
 
