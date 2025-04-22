@@ -1,0 +1,282 @@
+{
+    "StartAt": "LoadDataToS3",
+    "States": {
+      "LoadDataToS3": {
+        "Type": "Task",
+        "Resource": "arn:aws:states:::ecs:runTask.sync",
+        "Parameters": {
+          "Cluster": "arn:aws:ecs:eu-west-1:050451375647:cluster/deltalakehouse",
+          "TaskDefinition": "arn:aws:ecs:eu-west-1:050451375647:task-definition/delta-s3-load:1",
+          "LaunchType": "FARGATE",
+          "NetworkConfiguration": {
+            "AwsvpcConfiguration": {
+              "Subnets": [
+                "subnet-0d92b687c3d41b7a6",
+                "subnet-0069f34754ee3ffcb",
+                "subnet-0095cd0a84024e93c"
+              ],
+              "SecurityGroups": [
+                "sg-0489f9ec8e2d3b6dc"
+              ],
+              "AssignPublicIp": "ENABLED"
+            }
+          }
+        },
+        "Next": "CheckS3Data",
+        "Catch": [
+          {
+            "ErrorEquals": ["States.ALL"],
+            "Next": "NotifyLoadFailure",
+            "ResultPath": "$.error"
+          }
+        ]
+      },
+      "CheckS3Data": {
+        "Type": "Task",
+        "Resource": "arn:aws:states:::aws-sdk:s3:listObjectsV2",
+        "Parameters": {
+          "Bucket": "ecommerce-lakehouse-22",
+          "Prefix": "raw-data/"
+        },
+        "Next": "EvaluateS3Data",
+        "Catch": [
+          {
+            "ErrorEquals": ["States.ALL"],
+            "Next": "NotifyS3CheckFailure",
+            "ResultPath": "$.error"
+          }
+        ]
+      },
+      "EvaluateS3Data": {
+        "Type": "Choice",
+        "Choices": [
+          {
+            "Variable": "$.KeyCount",
+            "NumericGreaterThan": 0,
+            "Next": "RunGlueJob"
+          }
+        ],
+        "Default": "NotifyNoData"
+      },
+      "RunGlueJob": {
+        "Type": "Task",
+        "Resource": "arn:aws:states:::glue:startJobRun.sync",
+        "Parameters": {
+          "JobName": "ecommerce-delta"
+        },
+        "Next": "TriggerGlueCrawler",
+        "Catch": [
+          {
+            "ErrorEquals": ["States.ALL"],
+            "Next": "NotifyGlueJobFailure",
+            "ResultPath": "$.error"
+          }
+        ]
+      },
+      "TriggerGlueCrawler": {
+        "Type": "Task",
+        "Resource": "arn:aws:states:::aws-sdk:glue:startCrawler",
+        "Parameters": {
+          "Name": "lakehouse"
+        },
+        "Next": "WaitForCrawler",
+        "Catch": [
+          {
+            "ErrorEquals": ["States.ALL"],
+            "Next": "NotifyCrawlerFailure",
+            "ResultPath": "$.error"
+          }
+        ]
+      },
+      "WaitForCrawler": {
+        "Type": "Wait",
+        "Seconds": 60,
+        "Next": "CheckGlueTables"
+      },
+      "CheckGlueTables": {
+        "Type": "Task",
+        "Resource": "arn:aws:states:::aws-sdk:glue:getTables",
+        "Parameters": {
+          "DatabaseName": "lakehouse"
+        },
+        "Next": "EvaluateGlueTables",
+        "Catch": [
+          {
+            "ErrorEquals": ["States.ALL"],
+            "Next": "NotifyTableCheckFailure",
+            "ResultPath": "$.error"
+          }
+        ]
+      },
+      "EvaluateGlueTables": {
+        "Type": "Choice",
+        "Choices": [
+          {
+            "Variable": "$.TableList[0]",
+            "IsPresent": true,
+            "Next": "RunAthenaQueries"
+          }
+        ],
+        "Default": "NotifyNoTables"
+      },
+      "RunAthenaQueries": {
+        "Type": "Parallel",
+        "Branches": [
+          {
+            "StartAt": "RunUserSpendQuery",
+            "States": {
+              "RunUserSpendQuery": {
+                "Type": "Task",
+                "Resource": "arn:aws:states:::athena:startQueryExecution.sync",
+                "Parameters": {
+                  "QueryString": "SELECT date, user_id, SUM(total_amount) AS user_spend FROM lakehouse.master GROUP BY date, user_id ORDER BY date, user_spend DESC",
+                  "ResultConfiguration": {
+                    "OutputLocation": "s3://ecommerce-lakehouse-22/athena-results/user-spend/"
+                  }
+                },
+                "End": true
+              }
+            }
+          },
+          {
+            "StartAt": "RunTopProductsQuery",
+            "States": {
+              "RunTopProductsQuery": {
+                "Type": "Task",
+                "Resource": "arn:aws:states:::athena:startQueryExecution.sync",
+                "Parameters": {
+                  "QueryString": "SELECT product_id, product_name, COUNT(*) AS order_count FROM lakehouse.master WHERE date = (SELECT MAX(date) FROM lakehouse.master) GROUP BY product_id, product_name ORDER BY order_count DESC LIMIT 10",
+                  "ResultConfiguration": {
+                    "OutputLocation": "s3://ecommerce-lakehouse-22/athena-results/top-products/"
+                  }
+                },
+                "End": true
+              }
+            }
+          }
+        ],
+        "Next": "NotifySuccess",
+        "Catch": [
+          {
+            "ErrorEquals": ["States.ALL"],
+            "Next": "NotifyAthenaFailure",
+            "ResultPath": "$.error"
+          }
+        ]
+      },
+      "NotifySuccess": {
+        "Type": "Task",
+        "Resource": "arn:aws:states:::sns:publish",
+        "Parameters": {
+          "TopicArn": "arn:aws:sns:eu-west-1:050451375647:Success",
+          "Message": "Pipeline completed successfully. Data loaded, Glue job executed, tables created, and queries completed.",
+          "Subject": "Pipeline Success"
+        },
+        "End": true
+      },
+      "NotifyLoadFailure": {
+        "Type": "Task",
+        "Resource": "arn:aws:states:::sns:publish",
+        "Parameters": {
+          "TopicArn": "arn:aws:sns:eu-west-1:050451375647:Failed",
+          "Message": {
+            "Error": "Data loading failed",
+            "Cause": "ECS task failed to load data to S3",
+            "Details.$": "$.error"
+          },
+          "Subject": "Pipeline Failure: Data Loading"
+        },
+        "End": true
+      },
+      "NotifyS3CheckFailure": {
+        "Type": "Task",
+        "Resource": "arn:aws:states:::sns:publish",
+        "Parameters": {
+          "TopicArn": "arn:aws:sns:eu-west-1:050451375647:Failed",
+          "Message": {
+            "Error": "S3 check failed",
+            "Cause": "Could not verify data in S3 bucket",
+            "Details.$": "$.error"
+          },
+          "Subject": "Pipeline Failure: S3 Check"
+        },
+        "End": true
+      },
+      "NotifyNoData": {
+        "Type": "Task",
+        "Resource": "arn:aws:states:::sns:publish",
+        "Parameters": {
+          "TopicArn": "arn:aws:sns:eu-west-1:050451375647:Failed",
+          "Message": "No data found in S3 bucket after loading attempt. Pipeline terminated.",
+          "Subject": "Pipeline Failure: No Data"
+        },
+        "End": true
+      },
+      "NotifyGlueJobFailure": {
+        "Type": "Task",
+        "Resource": "arn:aws:states:::sns:publish",
+        "Parameters": {
+          "TopicArn": "arn:aws:sns:eu-west-1:050451375647:Failed",
+          "Message": {
+            "Error": "Glue job execution failed",
+            "Cause": "Could not complete data transformation task",
+            "Details.$": "$.error"
+          },
+          "Subject": "Pipeline Failure: Glue Job"
+        },
+        "End": true
+      },
+      "NotifyCrawlerFailure": {
+        "Type": "Task",
+        "Resource": "arn:aws:states:::sns:publish",
+        "Parameters": {
+          "TopicArn": "arn:aws:sns:eu-west-1:050451375647:Failed",
+          "Message": {
+            "Error": "Glue Crawler failed",
+            "Cause": "Could not create tables from S3 data",
+            "Details.$": "$.error"
+          },
+          "Subject": "Pipeline Failure: Glue Crawler"
+        },
+        "End": true
+      },
+      "NotifyTableCheckFailure": {
+        "Type": "Task",
+        "Resource": "arn:aws:states:::sns:publish",
+        "Parameters": {
+          "TopicArn": "arn:aws:sns:eu-west-1:050451375647:Failed",
+          "Message": {
+            "Error": "Table check failed",
+            "Cause": "Could not verify tables in Glue database",
+            "Details.$": "$.error"
+          },
+          "Subject": "Pipeline Failure: Table Check"
+        },
+        "End": true
+      },
+      "NotifyNoTables": {
+        "Type": "Task",
+        "Resource": "arn:aws:states:::sns:publish",
+        "Parameters": {
+          "TopicArn": "arn:aws:sns:eu-west-1:050451375647:Failed",
+          "Message": "No tables found in Glue database after crawler run. Pipeline terminated.",
+          "Subject": "Pipeline Failure: No Tables"
+        },
+        "End": true
+      },
+      "NotifyAthenaFailure": {
+        "Type": "Task",
+        "Resource": "arn:aws:states:::sns:publish",
+        "Parameters": {
+          "TopicArn": "arn:aws:sns:eu-west-1:050451375647:Failed",
+          "Message": {
+            "Error": "Athena query failed",
+            "Cause": "Could not execute analytical queries",
+            "Details.$": "$.error"
+          },
+          "Subject": "Pipeline Failure: Athena Query"
+        },
+        "End": true
+      }
+    }
+  }
