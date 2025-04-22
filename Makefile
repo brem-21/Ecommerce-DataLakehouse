@@ -3,7 +3,7 @@ install:
 	pip install -r requirements.txt
 
 format:
-	black scripts/*.py tests/*.py 
+	black scripts/*.py tests/*.py glue_script/*.py
 
 test:
 	python -m pytest -vv --cov=tests tests/test_*.py
