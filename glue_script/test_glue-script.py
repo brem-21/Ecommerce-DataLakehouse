@@ -158,7 +158,7 @@ def test_transform_order_items_data(spark):
         ),
     ]
     expected_df = spark.createDataFrame(expected_data, expected_schema)
-
+    # Apply the transformation function
     transformed_df = transform_order_items_data(input_df)
 
     assert (
