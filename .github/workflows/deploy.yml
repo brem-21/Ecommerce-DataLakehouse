@@ -82,7 +82,7 @@ jobs:
                 "--enable-continuous-cloudwatch-log": "true",
                 "--enable-metrics": ""
               },
-              "GlueVersion": "3.0",
+              "GlueVersion": "4.0",
               "WorkerType": "G.1X",
               "NumberOfWorkers": 2,
               "ExecutionProperty": {
