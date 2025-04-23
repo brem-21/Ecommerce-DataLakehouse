@@ -63,18 +63,18 @@ jobs:
         with:
           aws-access-key-id: ${{ secrets.ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.REGION_NAME }}
+          aws-region: eu-west-1
 
       - name: Deploy Glue Job
         run: |
-          aws s3 cp glue_script/ s3://aws-glue-assets-${{ secrets.ACCOUNT_ID }}-${{ secrets.REGION_NAME }}/scripts/ --recursive
+          aws s3 cp glue_script/ s3://aws-glue-assets-${{ secrets.ACCOUNT_ID }}-eu-west-1/scripts/ --recursive
 
           aws glue update-job --job-name ecommerce-delta \
             --job-update '{
               "Role": "arn:aws:iam::${{ secrets.ACCOUNT_ID }}:role/service-role/${{ secrets.STEP_FUNCTIONS_ROLE }}",
               "Command": {
                 "Name": "glueetl",
-                "ScriptLocation": "s3://aws-glue-assets-${{ secrets.ACCOUNT_ID }}-${{ secrets.REGION_NAME }}/scripts/ecommerce-delta.py",
+                "ScriptLocation": "s3://aws-glue-assets-${{ secrets.ACCOUNT_ID }}-eu-west-1/scripts/ecommerce-delta.py",
                 "PythonVersion": "3"
               },
               "DefaultArguments": {
@@ -93,7 +93,7 @@ jobs:
       - name: Trigger Step Function Execution
         run: |
           aws stepfunctions start-execution \
-            --state-machine-arn "arn:aws:states:${{ secrets.REGION_NAME }}:${{ secrets.ACCOUNT_ID }}:stateMachine:lakehouse" \
+            --state-machine-arn "arn:aws:states:eu-west-1:${{ secrets.ACCOUNT_ID }}:stateMachine:lakehouse" \
             --name "github-actions-$(date +%s)" \
             --input '{"Comment": "Triggered by GitHub Actions deployment"}'
 
