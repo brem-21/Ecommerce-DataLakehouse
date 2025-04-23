@@ -14,7 +14,7 @@ from delta import configure_spark_with_delta_pip
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-
+# Initialize Glue context with Delta Lake configurations
 def initialize_glue_context(job_name):
     """Initialize and return Glue context with Delta Lake configurations"""
     args = getResolvedOptions(sys.argv, ["JOB_NAME", "BUCKET_NAME"])
@@ -43,7 +43,7 @@ def initialize_glue_context(job_name):
     job.init(job_name, args)
     return glue_context, spark, args, job  # Return job object
 
-
+# Load data from S3 bucket and return as DataFrame
 def load_data_from_s3(spark, bucket_name, folder_path):
     """Load data from S3 bucket and return as DataFrame"""
     full_path = f"s3a://{bucket_name}/{folder_path}"
