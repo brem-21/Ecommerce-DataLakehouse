@@ -324,6 +324,6 @@ def main():
         logger.error(f"Job failed: {str(e)}")
         raise
 
-
+# The script is executed when run directly
 if __name__ == "__main__":
     main()
