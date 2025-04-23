@@ -5,7 +5,7 @@ on:
     branches:
       - "main"
     paths:
-      - 'glue_script/**'  # Specify paths for Glue scripts
+      - 'glue_script/**'
   pull_request:
     branches:
       - "main"
@@ -23,60 +23,58 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v3
         with:
-          python-version: '3.9' # Compatible with Glue/PySpark
+          python-version: '3.9'
 
-      - name: Set up Java (required for Spark)
+      - name: Set up Java
         uses: actions/setup-java@v3
         with:
           distribution: 'temurin'
-          java-version: '11' # Spark 3.x common version
+          java-version: '11'
 
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          java -version  # Verify Java setup
-          python --version  # Verify Python setup
-          pip list  # List installed packages
+          java -version
+          python --version
+          pip list
 
       - name: Run Pytest Integration Tests
-        run: cd glue_script && pytest  # Run tests for Glue ETL
+        run: cd glue_script && pytest
         env:
-           PYSPARK_PYTHON: python  # Ensure pytest uses the correct Python
-           PYSPARK_DRIVER_PYTHON: python
+          PYSPARK_PYTHON: python
+          PYSPARK_DRIVER_PYTHON: python
 
   deploy:
     name: Deploy Glue Script to AWS
-    needs: test  # Run only if tests pass
+    needs: test
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     permissions:
-      id-token: write  # Required for OIDC authentication
-      contents: read  # Required to read contents $$
+      id-token: write
+      contents: read
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
-        
+
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
           aws-access-key-id: ${{ secrets.ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.SECRET_ACCESS_KEY }}
-          aws-region: eu-west-1
-          
+          aws-region: ${{ secrets.REGION_NAME }}
+
       - name: Deploy Glue Job
         run: |
-          # Upload the Glue job script to S3
-          aws s3 cp glue_script/ s3://aws-glue-assets-${{ secrets.AWS_ACCOUNT_ID }}-${{ secrets.REGION_NAME }}/scripts/ --recursive
-          
-          # Update the Glue job definition
+          aws s3 cp glue_script/ s3://aws-glue-assets-${{ secrets.ACCOUNT_ID }}-${{ secrets.REGION_NAME }}/scripts/ --recursive
+
           aws glue update-job --job-name ecommerce-delta \
             --job-update '{
-              "Role": "arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/service-role/${{ secrets.STEP_FUNCTIONS_ROLE }}",
+              "Role": "arn:aws:iam::${{ secrets.ACCOUNT_ID }}:role/service-role/${{ secrets.STEP_FUNCTIONS_ROLE }}",
               "Command": {
-                "Name": "ecommerce-delta",
-                "ScriptLocation": "s3://aws-glue-assets-${{ secrets.AWS_ACCOUNT_ID }}-${{ secrets.REGION_NAME }}/scripts/ecommerce-delta.py",
+                "Name": "glueetl",
+                "ScriptLocation": "s3://aws-glue-assets-${{ secrets.ACCOUNT_ID }}-${{ secrets.REGION_NAME }}/scripts/ecommerce-delta.py",
                 "PythonVersion": "3"
               },
               "DefaultArguments": {
@@ -91,16 +89,13 @@ jobs:
                 "MaxConcurrentRuns": 1
               }
             }'
-          
+
       - name: Trigger Step Function Execution
         run: |
-          # Trigger Step Function execution
           aws stepfunctions start-execution \
-            --state-machine-arn "arn:aws:states:${{ secrets.REGION_NAME }}:${{ secrets.AWS_ACCOUNT_ID }}:stateMachine:lakehouse" \
+            --state-machine-arn "arn:aws:states:${{ secrets.REGION_NAME }}:${{ secrets.ACCOUNT_ID }}:stateMachine:lakehouse" \
             --name "github-actions-$(date +%s)" \
             --input '{"Comment": "Triggered by GitHub Actions deployment"}'
-            
+
       - name: Verify Execution
-        run: |
-          # Optional: Add verification logic here to ensure the deployment worked
-          echo "Glue job deployed and pipeline triggered successfully"
+        run: echo "Glue job deployed and pipeline triggered successfully"
