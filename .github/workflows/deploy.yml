@@ -82,7 +82,7 @@ jobs:
                   "--enable-continuous-cloudwatch-log": "true",
                   "--enable-metrics": "",
                   "--extra-jars": "s3://ecommerce-lakehouse-22/lib/delta-core_2.12-2.4.0.jar",
-                  "--extra-py-files": "s3://ecommerce-lakehouse-22/lib/delta-spark_2.12-2.4.0.jar,s3://ecommerce-lakehouse-22/lib/delta-core_2.12-2.4.0.jar",
+                  "--extra-py-files": "s3://ecommerce-lakehouse-22/lib/delta-core_2.12-2.4.0.jar",
                   "--conf": "spark.sql.extensions=io.delta.sql.DeltaSparkSessionExtension",
                   "--conf": "spark.sql.catalog.spark_catalog=org.apache.spark.sql.delta.catalog.DeltaCatalog",
                   "--conf": "spark.jars.packages=io.delta:delta-core_2.12:2.4.0",
