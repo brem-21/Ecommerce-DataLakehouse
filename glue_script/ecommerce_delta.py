@@ -226,7 +226,7 @@ def save_normalized_data_to_s3(
         logger.error(f"Failed to save data to S3: {str(e)}")
         raise
 
-
+# Save master data to S3 in Delta Lake format, partitioned by date, and archive
 def save_master_data_to_s3(df, bucket_name, output_path, archive_path):
     """Save master DataFrame to S3 in Delta Lake format, partitioned by date, and archive"""
     try:

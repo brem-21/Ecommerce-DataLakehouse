@@ -22,6 +22,7 @@ coverage
 debugpy
 decorator
 defusedxml
+delta-spark
 dill
 et_xmlfile
 executing
