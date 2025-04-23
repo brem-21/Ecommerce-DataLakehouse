@@ -1,4 +1,4 @@
-# Ecommerce-DataLakehouse [![Integrating dev changes to main](https://github.com/brem-21/Ecommerce-DataLakehouse/actions/workflows/integrating.yml/badge.svg)](https://github.com/brem-21/Ecommerce-DataLakehouse/actions/workflows/integrating.yml)
+# Ecommerce-DataLakehouse [![Integrating dev changes to main](https://github.com/brem-21/Ecommerce-DataLakehouse/actions/workflows/integrating.yml/badge.svg)](https://github.com/brem-21/Ecommerce-DataLakehouse/actions/workflows/integrating.yml) [![Deploy Glue Job and Trigger Step Function](https://github.com/brem-21/Ecommerce-DataLakehouse/actions/workflows/deploy.yml/badge.svg)](https://github.com/brem-21/Ecommerce-DataLakehouse/actions/workflows/deploy.yml)
 
 A Lakehouse architecture for an e-commerce platform on AWS. The system ingests raw transactional data stored in Amazon S3, cleans and deduplicates it using Delta Lake, and exposes it for downstream analytics through Amazon Athena.
 
