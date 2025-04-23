@@ -71,7 +71,7 @@ jobs:
 
           aws glue update-job --job-name ecommerce-delta \
             --job-update '{
-              "Role": "arn:aws:iam::${{ secrets.ACCOUNT_ID }}:role/service-role/${{ secrets.STEP_FUNCTIONS_ROLE }}",
+              "Role": "${{ secrets.STEP_FUNCTIONS_ROLE }}",
               "Command": {
                 "Name": "ecommerce_delta",
                 "ScriptLocation": "s3://aws-glue-assets-${{ secrets.ACCOUNT_ID }}-${{ secrets.REGION_NAME }}/scripts/ecommerce_delta.py",
