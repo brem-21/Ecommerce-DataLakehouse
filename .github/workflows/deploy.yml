@@ -80,7 +80,10 @@ jobs:
               "DefaultArguments": {
                 "--job-language": "python",
                 "--enable-continuous-cloudwatch-log": "true",
-                "--enable-metrics": ""
+                "--enable-metrics": "",
+                "--extra-jars": "s3://ecommerce-lakehouse-22/lib/delta-core_2.12-2.4.0.jar",
+                "--conf": "spark.sql.extensions=io.delta.sql.DeltaSparkSessionExtension",
+                "--conf2": "spark.sql.catalog.spark_catalog=org.apache.spark.sql.delta.catalog.DeltaCatalog"
               },
               "GlueVersion": "4.0",
               "WorkerType": "G.1X",
