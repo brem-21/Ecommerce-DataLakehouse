@@ -616,7 +616,7 @@ def test_save_normalized_data_to_s3_with_partition(spark, caplog):
                 partition_col="date",
             )
 
-            # Verify the calls
+            # Verify the calls to the mock writer
             mock_writer.format.assert_called_with("delta")
             mock_writer.partitionBy.assert_called_with("date")
             mock_writer.mode.assert_called_with("overwrite")
