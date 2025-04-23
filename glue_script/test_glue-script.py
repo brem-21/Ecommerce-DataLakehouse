@@ -485,6 +485,7 @@ def test_normalize_data(spark):
         expected_departments_data, expected_departments_schema
     )
 
+    # Note: The product_id is not included in the expected_products_df
     expected_products_data = [(988, "Apple", 1), (989, "Bread", 2)]
     expected_products_schema = StructType(
         [
