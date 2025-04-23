@@ -622,7 +622,7 @@ def test_save_normalized_data_to_s3_with_partition(spark, caplog):
             mock_writer.mode.assert_called_with("overwrite")
             assert mock_writer.save.call_count == 2
 
-# Check the log messages
+# Check the log messages assert "Data saved to S3 with partitioning" in caplog.text
 def test_save_master_data_to_s3(spark):
     from ecommerce_delta import save_master_data_to_s3
 
