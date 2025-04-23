@@ -184,6 +184,7 @@ def normalize_data(final_df):
 def partition_data(df, partition_by, num_partitions=None, sort_by=None):
     """Partition data by specified column(s) with optional sorting"""
     try:
+        # Check if partition_by is a list or a single column
         if num_partitions and sort_by:
             sort_columns = [col(c.strip()) for c in sort_by.split(",")]
             df = df.repartition(num_partitions, col(partition_by)).sortWithinPartitions(
