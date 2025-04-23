@@ -59,7 +59,7 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v2
+        uses: aws-actions/configure-aws-credentials@v4.1.0
         with:
           aws-access-key-id: ${{ secrets.ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.SECRET_ACCESS_KEY }}
@@ -73,8 +73,8 @@ jobs:
             --job-update '{
               "Role": "arn:aws:iam::${{ secrets.ACCOUNT_ID }}:role/service-role/${{ secrets.STEP_FUNCTIONS_ROLE }}",
               "Command": {
-                "Name": "glueetl",
-                "ScriptLocation": "s3://aws-glue-assets-${{ secrets.ACCOUNT_ID }}-eu-west-1/scripts/ecommerce-delta.py",
+                "Name": "ecommerce_delta",
+                "ScriptLocation": "s3://aws-glue-assets-${{ secrets.ACCOUNT_ID }}-eu-west-1/scripts/ecommerce_delta.py",
                 "PythonVersion": "3"
               },
               "DefaultArguments": {
