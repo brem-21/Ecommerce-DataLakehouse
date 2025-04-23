@@ -180,7 +180,7 @@ def normalize_data(final_df):
         logger.error(f"Failed to normalize data: {str(e)}")
         raise
 
-
+# partition_data function is used to partition data by specified column(s)
 def partition_data(df, partition_by, num_partitions=None, sort_by=None):
     """Partition data by specified column(s) with optional sorting"""
     try:
