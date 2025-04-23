@@ -55,7 +55,7 @@ def load_data_from_s3(spark, bucket_name, folder_path):
         logger.error(f"Failed to load data from {full_path}: {str(e)}")
         raise
 
-
+# Transform order items data
 def transform_order_items_data(df):
     """Apply transformations to order items data"""
     try:

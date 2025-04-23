@@ -83,14 +83,11 @@ jobs:
                   "--enable-metrics": "",
                   "--extra-jars": "s3://ecommerce-lakehouse-22/lib/delta-core_2.12-2.4.0.jar",
                   "--extra-py-files": "s3://ecommerce-lakehouse-22/lib/delta-core_2.12-2.4.0.jar",
-                  "--conf": "spark.sql.extensions=io.delta.sql.DeltaSparkSessionExtension",
-                  "--conf": "spark.sql.catalog.spark_catalog=org.apache.spark.sql.delta.catalog.DeltaCatalog",
-                  "--conf": "spark.jars.packages=io.delta:delta-core_2.12:2.4.0",
                   "--conf": "spark.delta.logStore.class=org.apache.spark.sql.delta.storage.S3SingleDriverLogStore",
                   "--additional-python-modules": "delta-spark==2.4.0", 
-                  "--additional-python-modules": "pyspark==3.3.0",
+                  "--BUCKET_NAME": "${{ secrets.BUCKET_NAME }}"
                 },
-                "GlueVersion": "4.0",
+                "GlueVersion": "5.0",
                 "WorkerType": "G.1X",
                 "NumberOfWorkers": 2,
                 "ExecutionProperty": {
