@@ -79,7 +79,7 @@ def test_load_data_from_s3_success(spark):
 def test_load_data_from_s3_failure(spark, caplog):
     """Test failure handling when loading data from S3."""
     from ecommerce_delta import load_data_from_s3
-
+    # Patch at function level
     with patch("pyspark.sql.readwriter.DataFrameReader.csv") as mock_read_csv:
         with caplog.at_level(logging.ERROR):
             mock_read_csv.side_effect = Exception("S3 read error")
