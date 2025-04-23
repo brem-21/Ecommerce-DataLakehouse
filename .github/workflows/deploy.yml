@@ -73,7 +73,7 @@ jobs:
             --job-update '{
               "Role": "${{ secrets.STEP_FUNCTIONS_ROLE }}",
               "Command": {
-                "Name": "ecommerce_delta",
+                "Name": "glueetl",
                 "ScriptLocation": "s3://aws-glue-assets-${{ secrets.ACCOUNT_ID }}-${{ secrets.REGION_NAME }}/scripts/ecommerce_delta.py",
                 "PythonVersion": "3"
               },
