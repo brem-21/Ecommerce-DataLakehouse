@@ -87,7 +87,8 @@ jobs:
                   "--conf": "spark.sql.catalog.spark_catalog=org.apache.spark.sql.delta.catalog.DeltaCatalog",
                   "--conf": "spark.jars.packages=io.delta:delta-core_2.12:2.4.0",
                   "--conf": "spark.delta.logStore.class=org.apache.spark.sql.delta.storage.S3SingleDriverLogStore",
-                  "--additional-python-modules": "delta-spark==2.4.0"
+                  "--additional-python-modules": "delta-spark==2.4.0", 
+                  "--additional-python-modules": "pyspark==3.3.0",
                 },
                 "GlueVersion": "4.0",
                 "WorkerType": "G.1X",
