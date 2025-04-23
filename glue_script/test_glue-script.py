@@ -296,7 +296,7 @@ def test_join_datasets_with_products(spark):
     assert result_df.schema == expected_schema, f"Schema mismatch: {result_df.schema}"
     assert result_df.collect() == expected_df.collect(), "Data mismatch"
 
-
+# Test the join operation with empty DataFrames
 def test_join_datasets_without_products(spark):
     """Test the join operation without products dataset."""
     from ecommerce_delta import join_datasets
