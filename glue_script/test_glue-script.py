@@ -116,7 +116,7 @@ def test_transform_order_items_data(spark):
         (2, 10001, 1991, 15, 989, 2, 1, "2025-04-02T12:30:00", "2025-04-02"),
     ]
     input_df = spark.createDataFrame(input_data, input_schema)
-
+    # Transform the 'reordered' column to 'Reorder' or 'Not_Reorder'    
     expected_schema = StructType(
         [
             StructField("id", IntegerType(), True),
