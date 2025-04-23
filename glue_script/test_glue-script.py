@@ -75,7 +75,7 @@ def test_load_data_from_s3_success(spark):
         assert result_df.schema == input_schema, f"Schema mismatch: {result_df.schema}"
         assert result_df.collect() == mock_df.collect(), "Data mismatch"
 
-
+# Test failure handling when loading data from S3
 def test_load_data_from_s3_failure(spark, caplog):
     """Test failure handling when loading data from S3."""
     from ecommerce_delta import load_data_from_s3
